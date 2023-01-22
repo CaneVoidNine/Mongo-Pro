@@ -23,21 +23,22 @@ productsRouter.get("/", async (req, res, next) => {
   try {
     const mongoQuery = q2m(req.query);
     const total = await productModel.countDocuments(mongoQuery.criteria);
-    console.log();
+    console.log(total);
     const products = await productModel
       .find(mongoQuery.criteria, mongoQuery.options.fields)
-      .populate({ path: "review", select: "comment rate" })
       .sort(mongoQuery.options.sort)
       .skip(mongoQuery.options.skip)
       .limit(mongoQuery.options.limit);
-    res
-      .status(200)
-      .send({
-        links: mongoQuery.links(total),
-        total,
-        totalPages: Math.ceil(total / mongo.options.limit),
-        products,
-      });
+    res.status(200).send({
+      links: mongoQuery.links(total),
+      total,
+      totalPages: Math.ceil(total / mongoQuery.options.limit),
+      products,
+    });
+    // const products = await productModel
+    //   .find({})
+    //   .populate({ path: "review", select: "comment rate" });
+    // res.send(products);
   } catch (error) {
     next(error);
   }
