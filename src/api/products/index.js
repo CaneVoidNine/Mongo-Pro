@@ -1,7 +1,8 @@
 import express from "express";
 import productModel from "./model.js";
 import createHttpError from "http-errors";
-
+import q2m from "query-to-mongo";
+import { mongo } from "mongoose";
 const productsRouter = express.Router();
 
 // POST
@@ -20,10 +21,23 @@ productsRouter.post("/", async (req, res, next) => {
 
 productsRouter.get("/", async (req, res, next) => {
   try {
+    const mongoQuery = q2m(req.query);
+    const total = await productModel.countDocuments(mongoQuery.criteria);
+    console.log();
     const products = await productModel
-      .find({})
-      .populate({ path: "review", select: "comment rate" });
-    res.send(products);
+      .find(mongoQuery.criteria, mongoQuery.options.fields)
+      .populate({ path: "review", select: "comment rate" })
+      .sort(mongoQuery.options.sort)
+      .skip(mongoQuery.options.skip)
+      .limit(mongoQuery.options.limit);
+    res
+      .status(200)
+      .send({
+        links: mongoQuery.links(total),
+        total,
+        totalPages: Math.ceil(total / mongo.options.limit),
+        products,
+      });
   } catch (error) {
     next(error);
   }
